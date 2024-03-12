@@ -1,16 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/bnb-chain/go-sdk/client/rpc"
 	ctypes "github.com/bnb-chain/go-sdk/common/types"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 )
 
 const nodeAddr = "tcp://dataseed1.bnbchain.org:80"
+const startIndicator = "<!-- AUTO_UPDATE_START -->"
+const endIndicator = "<!-- AUTO_UPDATE_END -->"
 
 func main() {
 	result := getTokenBindStatus()
@@ -26,19 +28,34 @@ func updateReadme(result string) {
 	}
 	defer file.Close()
 
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
+	original := make([]string, 0)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		original = append(original, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-	original := string(content)
 
-	var re = regexp.MustCompile(`/<!-- AUTO_UPDATE_START -->([\s\S]*?)<!-- AUTO_UPDATE_END -->/`)
-	current := re.ReplaceAllString(original, fmt.Sprintf(`<!-- AUTO_UPDATE_START -->\n%s\n<!-- AUTO_UPDATE_END -->`, result))
+	current := make([]string, 0)
+	replace := false
+	for _, line := range original {
+		if strings.HasPrefix(line, endIndicator) {
+			current = append(current, result) // append result
+			replace = false
+		}
+		if !replace {
+			current = append(current, line)
+		}
+		if strings.HasPrefix(line, startIndicator) {
+			replace = true
+		}
+	}
 
-	fmt.Println("Original", original)
-	fmt.Println("Current", current)
+	fmt.Println("Original", strings.Join(original, "\n"))
+	fmt.Println("Current", strings.Join(current, "\n"))
 
-	err = ioutil.WriteFile("README.md", []byte(current), 0644)
+	err = ioutil.WriteFile("README.md", []byte(strings.Join(current, "\n")), 0644)
 	if err != nil {
 		panic(err)
 	}
