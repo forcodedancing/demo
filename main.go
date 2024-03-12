@@ -41,8 +41,8 @@ func updateReadme(result string) {
 	replace := false
 	for _, line := range original {
 		if strings.HasPrefix(line, endIndicator) {
-			current = append(current, "| Asset | Symbol | BSC Contract Address | Comments |\n")
-			current = append(current, "|-|-|-|-|\n")
+			current = append(current, "| Asset | Symbol | BSC Contract Address | Comments |")
+			current = append(current, "|-|-|-|-|")
 			current = append(current, result) // append result
 			replace = false
 		}
